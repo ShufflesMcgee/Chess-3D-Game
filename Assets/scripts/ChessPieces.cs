@@ -17,6 +17,6 @@ public abstract class Chesspieces : MonoBehaviour
 
 	public virtual bool[,] possibleMove()
 		{
-			return new bool[8,8];
+			return new bool[9,9];
 		}
 }

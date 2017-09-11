@@ -12,9 +12,9 @@ public class CameraControl : MonoBehaviour {
 	public Button centerOverheadButton;
 	public Button centerBehindButton;
 
-	const float angle = 45;
-	const float top = 90;
-	const float bottom = 0;
+	const float angle = 45f;
+	const float top = 90f;
+	const float bottom = 5f;
 
 	int xPos = 1;
 
@@ -118,7 +118,7 @@ public class CameraControl : MonoBehaviour {
 						tempRot.y -= angle;
 				}
 			if(tempRot.z != bottom)
-				tempRot.z = bottom;
+				tempRot.z = 0f;
 			targetRot.eulerAngles = tempRot;
 		}
 	private void moveOverhead()

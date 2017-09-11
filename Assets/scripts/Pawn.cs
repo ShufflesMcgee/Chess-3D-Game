@@ -6,7 +6,7 @@ public class Pawn :Chesspieces
 {
 	public override bool[,] possibleMove()
 		{
-			bool[,] moves = new bool [8,8];
+			bool[,] moves = new bool [9,9];
 			Chesspieces piece, piece2;
 			int[] enP = BoardControl.Instance.enPassantMove;
 

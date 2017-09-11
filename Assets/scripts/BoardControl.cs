@@ -61,6 +61,8 @@ public class BoardControl : MonoBehaviour
 	public GameObject currentSquareText;
 
 	public Button moveListText;
+	public Button quitGame; //Application.Quit();
+	public Button minimizeGame;
 
 	private Text moveText;
 
@@ -85,7 +87,7 @@ public class BoardControl : MonoBehaviour
 		}
 
 	private void Update () 
-		{	
+		{				
 			if(Input.GetKeyDown("a"))
 				{
 					if(colorToggle != "a")
@@ -231,6 +233,7 @@ public class BoardControl : MonoBehaviour
 							takingPiece.transform.position = setNewPosition(removedPiecePos, 9, 9);
 							takingPiece.setPosition(9, 9);
 							enPassNote = true;
+							wasPieceCaptured = true;
 							//activeMen.Remove(takingPiece.gameObject);
 							//Destroy(takingPiece.gameObject);
 						}
@@ -358,24 +361,16 @@ public class BoardControl : MonoBehaviour
 
 	private void removeFromPlay()
 		{
-			int blackRow = 0;
-			int whiteRow = 0;
+			int outOfPlayRow = 0;
 			for(int i = 0; i < activeMen.Count; i++)
 				{
 					int y = (int)activeMen[i].transform.position.z;
 					Vector3 removedPos = activeMen[i].transform.position;
-					if(y > 8 || y < 0)
+					if(y > 8)
 						{							
-							if(activeMen[i].GetComponent<Chesspieces>().isWhite)
-								{
-									activeMen[i].transform.position = setNewPosition(removedPos, whiteRow, 9);
-									whiteRow++;
-								}
-							else
-								{
-									activeMen[i].transform.position = setNewPosition(removedPos, blackRow, 10);
-									blackRow++;
-								}							
+							activeMen[i].transform.position = setNewPosition(removedPos, outOfPlayRow, 9);
+							outOfPlayRow++;
+														
 						}
 				}
 		}
@@ -483,12 +478,12 @@ public class BoardControl : MonoBehaviour
 					newMove += codeNotation(pieceStartPos[0], pieceStartPos[1]);
 					if(wasPieceCaptured)
 						{
-							newMove += " x";
+							newMove += " x ";
 							newMove += capturedPiece;
 						}
 					else 
 						{
-							newMove += " -";
+							newMove += " - ";
 						}
 					newMove += codeNotation(pieceEndPos[0], pieceEndPos[1]);
 				}
@@ -526,6 +521,10 @@ public class BoardControl : MonoBehaviour
 			char label = ' ';
 			Quaternion facingDir;
 			Chesspieces currentPiece;
+
+			if(selectedMove != moveTextButtons.Count - 1)
+				boardHighlights.Instance.hideHighlights();
+
 			for(int i = 0; i < activeMen.Count; i++)
 				{
 					piecePos = activeMen[i].transform.position;
@@ -534,10 +533,7 @@ public class BoardControl : MonoBehaviour
 					n = i * 3;
 					_x = presentMove[n + 1];
 					_y = presentMove[n + 2];
-					label = pieceLabel[0];						
-					//Debug.Log(label.ToString());
-					//Debug.Log(presentMove[n].ToString());
-					//Debug.Log(moveHistory[selectedMove]);
+					label = pieceLabel[0];	
 					if(label != presentMove[n])
 						{
 							pieceIndex = getChessMenIndex(activeMen[i], presentMove[n]);
@@ -553,7 +549,8 @@ public class BoardControl : MonoBehaviour
 						}
 					x = (int)char.GetNumericValue(_x);
 					y = (int)char.GetNumericValue(_y);
-					activeMen[i].transform.position = setNewPosition(piecePos, x, y);				
+					activeMen[i].transform.position = setNewPosition(piecePos, x, y);	
+					//currentPiece.setPosition(x, y);	
 				}			
 		}
 
@@ -832,7 +829,7 @@ public class BoardControl : MonoBehaviour
 		{
 			gameMoveList = new List<string>();
 			activeMen = new List<GameObject>();
-			chessPieces = new Chesspieces[8, 8];
+			chessPieces = new Chesspieces[9, 9];
 			enPassantMove = new int[2]{-1, -1};
 			pieceStartPos = new int[2]{-1, -1};
 			pieceEndPos = new int[2]{-1, -1};
