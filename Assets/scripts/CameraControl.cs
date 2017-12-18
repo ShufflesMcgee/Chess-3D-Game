@@ -5,26 +5,29 @@ using UnityEngine.UI;
 
 public class CameraControl : MonoBehaviour {
 
+	public BoardControl board;
 	public Button moveUpButton;
 	public Button moveRightButton;
 	public Button moveLeftButton;
 	public Button moveDownButton;
 	public Button centerOverheadButton;
 	public Button centerBehindButton;
+	public Slider zoomSlider;
 
-	const float angle = 45f;
-	const float top = 90f;
-	const float bottom = 5f;
+	private int xPos = 2;
 
-	int xPos = 1;
+	private float [] angles = new float [5] {10, 30, 45, 60, 90};
+	private float lerpSpeed = 4f;
+	private float zoomVal;
+	const float zero = 0f;
+	const float zoomInc = 4f;
+
+	private Quaternion [] butPos;
+
+	private Quaternion targetRot;
 
 	public Transform cameraRoot;
 
-	private Quaternion targetRot;
-	private Quaternion overheadWhiteRot = Quaternion.Euler(90f, 0f, 0f);
-	private Quaternion overheadBlackRot = Quaternion.Euler(90f, 180f, 0f);
-	private Quaternion behindWhiteRot = Quaternion.Euler(45f, 0f, 0f);
-	private Quaternion behindBlackRot = Quaternion.Euler(45f, 180f, 0f);
 	/*	canvas layout
 			top side
 				a text display indicating the current players turn
@@ -37,112 +40,109 @@ public class CameraControl : MonoBehaviour {
 				4 directional arrows that control the camera movement
 				a small pic of an overhead view that will recenter to the overhead
 				a small pic of the 45 camera angle to recenter to that position
+				slider bar for zooming the camera
 			bottom side
 				a text display of the selected piece
 				a confirm and cancel button that appear when a move is choosen
+
+			
 	*/
 
 	private void Start()
 		{
-			moveUpButton.onClick.AddListener(moveUp);
-			moveRightButton.onClick.AddListener(moveRight);
-			moveLeftButton.onClick.AddListener(moveLeft);
-			moveDownButton.onClick.AddListener(moveDown);
+			butPos = new Quaternion[4];
+			butPos [0] =  Quaternion.Euler(90f, 0f, 0f);	//overhead White
+			butPos [1] =  Quaternion.Euler(90f, 180f, 0f);	//overhead Black
+			butPos [2] =  Quaternion.Euler(45f, 0f, 0f);	//behind White
+			butPos [3] =  Quaternion.Euler(45f, 180f, 0f);	//behind Black
+			moveUpButton.onClick.AddListener(() => rotCam("u"));
+			moveRightButton.onClick.AddListener(() => rotCam("r"));
+			moveLeftButton.onClick.AddListener(() => rotCam("l"));
+			moveDownButton.onClick.AddListener(() => rotCam("d"));
 			centerOverheadButton.onClick.AddListener(moveOverhead);
 			centerBehindButton.onClick.AddListener(moveBehind);
-			targetRot = behindWhiteRot;
+			targetRot = butPos [xPos];
 		}
+
 	private void Update () 
 		{	
 			if(Camera.current != null)
-     			{   	
-					cameraRoot.rotation = Quaternion.Slerp(cameraRoot.rotation, targetRot, .2f);
+     			{
+					float zoom = Input.GetAxis("Mouse ScrollWheel");					
+					if(zoom > zero)
+						{
+							zoomSlider.value -= zoomInc;
+						}
+					else if(zoom < zero)
+						{
+							zoomSlider.value += zoomInc;
+						}
+					zoomVal = zoomSlider.value;
+					if (board.confirmedMove) 
+						{
+							moveBehind ();
+							board.confirmedMove = false;
+						}
+					Camera.main.fieldOfView = Mathf.Lerp(Camera.main.fieldOfView, zoomVal, Time.deltaTime * lerpSpeed);	
+					cameraRoot.rotation = Quaternion.Slerp(cameraRoot.rotation, targetRot, Time.deltaTime * lerpSpeed);
 				}
 		}
-	private void moveUp()
-		{
-			rotCam('x', '+');
-			//Debug.Log(targetRot.eulerAngles.ToString());
-		}
-	private void moveDown()
-		{
-			rotCam('x', '-');
-			//Debug.Log(targetRot.eulerAngles.ToString());
-		}
-	private void moveLeft()
-		{
-			rotCam('y', '+');
-			//Debug.Log(targetRot.eulerAngles.ToString());
-		}
-	private void moveRight()
-		{
-			rotCam('y', '-');
-			//Debug.Log(targetRot.eulerAngles.ToString());
-  		}
-	private void rotCam(char xY, char plusMins)
+
+	private void rotCam(string dir)
 		{
 			Vector3 tempRot = cameraRoot.rotation.eulerAngles;
 
-			if(xY == 'x' && plusMins == '+')
+			if(dir == "u")
 				{
-					if(xPos == 0)
+					if(xPos < (angles.Length - 1))
 						{
-							tempRot.x = angle;
-							xPos = 1;
-						}
-					else if(xPos == 1)
-						{
-							tempRot.x = top;
-							xPos = 2;
+							xPos ++;
+							tempRot.x = angles [xPos];
 						}
 				}
-			else if(xY == 'x' && plusMins == '-')
+			else if(dir == "d")
 				{
-					if(xPos == 2)
+					if(xPos > zero)
 						{
-							tempRot.x = angle;
-							xPos = 1;
-						}
-					else if(xPos == 1)
-						{
-							tempRot.x = bottom;
-							xPos = 0;
+							xPos --;
+							tempRot.x = angles [xPos];
 						}
 				}
-			else if(xY == 'y' && plusMins == '+')
+			else if(dir == "l")
 				{
-						tempRot.y += angle;
+						tempRot.y += angles [1];
 				}
 			else
 				{
-						tempRot.y -= angle;
+						tempRot.y -= angles [1];
 				}
-			if(tempRot.z != bottom)
-				tempRot.z = 0f;
+
+			if(tempRot.z != zero)
+				tempRot.z = zero;
 			targetRot.eulerAngles = tempRot;
 		}
+
 	private void moveOverhead()
-		{			
-			if(BoardControl.Instance.isWhiteTurn)
-				{
-					targetRot = overheadWhiteRot;
-				}
-			else
-				{
-					targetRot = overheadBlackRot;
-				}
-			xPos = 2;
+		{	
+			setRot(0, 1);
+			xPos = 4;
 		}
+
 	private void moveBehind()
+		{
+			setRot(2, 3);
+			xPos = 2;
+		}	
+
+	private void setRot(int w, int b)
 		{
 			if(BoardControl.Instance.isWhiteTurn)
 				{
-					targetRot = behindWhiteRot;
+					targetRot = butPos [w];
 				}
 			else
 				{
-					targetRot = behindBlackRot;
+					targetRot = butPos [b];
 				}
-			xPos = 1;
 		}	
 	}

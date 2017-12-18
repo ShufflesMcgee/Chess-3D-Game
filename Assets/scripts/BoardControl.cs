@@ -14,6 +14,8 @@ public class BoardControl : MonoBehaviour
 	private List<GameObject> activeMen;
 	private List<string> moveHistory;
 	private List<Button> moveTextButtons;
+	private List<MeshFilter> activeMenMesh;
+	private List<MeshFilter> chessMenMesh;
 	List<GameObject> canvasGo;
 
 	private Renderer lastSquare = null;
@@ -51,18 +53,26 @@ public class BoardControl : MonoBehaviour
 	private bool toggleBoard = false;
 	private bool wasPieceCaptured = false;
 	private bool enPassNote = false;
-	public bool isWhiteTurn = true;
+	public bool confirmedMove = false;
+	public bool cancelMove = false;
 	public bool whiteKingHasMoved = false;
 	public bool blackKingHasMoved = false;
 	public bool queenSideCastle = false;
 	public bool kingSideCastle = false;
+	public bool isWhiteTurn = true;
+
+	public Scrollbar moveScrollVert;
+	public Scrollbar moveScrollHor;
 
 	public GameObject contentWindow;
 	public GameObject currentSquareText;
+	public GameObject confirmMovePanel;
 
 	public Button moveListText;
-	public Button quitGame; //Application.Quit();
-	public Button minimizeGame;
+	public Button quitGameButton; 
+	public Button minimizeGameButton;
+	public Button confirmMoveButton;
+	public Button cancelMoveButton;
 
 	private Text moveText;
 
@@ -78,16 +88,25 @@ public class BoardControl : MonoBehaviour
 	private Quaternion whiteFacingDirection = Quaternion.Euler(-90, 0, 0);
 	private Quaternion blackFacingDirection = Quaternion.Euler(-90, 180, 0);
 
+
 	private void Start()
-		{
+		{			
 			Instance = this;
 			spawnAllPieces();
+			setMesh();
+			chessMenMesh = new List<MeshFilter>();
+			foreach(GameObject go in activeMen)
+				chessMenMesh.Add(go.GetComponent<MeshFilter>());
 			resetNotation();
 			currentSquare = "";
+			confirmMoveButton.onClick.AddListener(confirmButtonListener);
+			cancelMoveButton.onClick.AddListener(cancelButtonListener);
+			quitGameButton.onClick.AddListener(quitGameButtonListener);
+			confirmMovePanel.SetActive(false);
 		}
 
 	private void Update () 
-		{				
+		{	
 			if(Input.GetKeyDown("a"))
 				{
 					if(colorToggle != "a")
@@ -105,9 +124,24 @@ public class BoardControl : MonoBehaviour
 			colorChanger();
 															
 			if(Input.GetKeyDown("space"))
-				toggleChange();	
-						
-			selectedMoveBG();
+				{
+					if(toggleBoard)
+						toggleBoard = false;
+					else 
+						toggleBoard = true;		
+				}
+			if(toggleBoard)
+				DrawChessboard();		
+	
+			displayMoves = "";
+			for(int i = 0; i < gameMoveList.Count; i++)
+				{
+					displayMoves += i.ToString() + gameMoveList[i];
+				}	
+			colorSelectedMoveBG();
+			if(selectedMove != -1)
+				displayMoveHistory();
+
 			if(Input.GetMouseButtonDown(0))
 				{
 					if(selectedMove == -1 || selectedMove == (moveTextButtons.Count - 1))
@@ -115,51 +149,35 @@ public class BoardControl : MonoBehaviour
 							if(selectedX >= 0 && selectedY >= 0 && selectedX < 8 && selectedY < 8)
 								{
 									if(clickedPiece == null)
-										{
-											//select piece
-											selectedChessPiece(selectedX, selectedY);
-										}
+										selectChessPiece(selectedX, selectedY);
 									else
-										{
-											//move piece
-											moveSelectedPiece(selectedX, selectedY);
-										}
+										moveSelectedPiece(selectedX, selectedY);
 								}
 						}												
 				}
-			if(selectedMove == -1)	
-				/*if: true then: skip*/ ;
-			else
-				presentMove();			
-			
-
-			displayMoves = "";
-			for(int i = 0; i < gameMoveList.Count; i++)
-				{
-					displayMoves += i.ToString() + gameMoveList[i];
-				}
 			colorSelectedSquare();
 			mouseOverSquare();
-			colorSelectedPiece();
-			if(toggleBoard == true)
-				DrawChessboard();
-
+			colorSelectedPiece();	
 
 			if(Input.GetKeyDown("l"))
 				{
-					//for(int i = 0; i < moveHistory.Count; i++)
-					//	{							
-					//		Debug.Log(moveHistory[i]);
-					//	}
-					for(int i = 0; i < activeMen.Count; i++)
+					/*
+					for(int i = 0; i < moveHistory.Count; i++)
+						{							
+							Debug.Log(moveHistory[i]);
+						}
+						Debug.Log(moveHistory[moveHistory.Count - 1]);
+						
+					for(int i = 0; i < chessMenMesh.Count; i++)
 						{							
 							Debug.Log(i);
-							Debug.Log(activeMen[i].name);
+							Debug.Log(chessMenMesh[i]);
 						}
+					*/
 				}
 		}
 
-	private void selectedChessPiece(int x, int y)
+	private void selectChessPiece(int x, int y)
 		{
 			resetNotation();
 			if(chessPieces[x, y] == null)
@@ -244,6 +262,7 @@ public class BoardControl : MonoBehaviour
 					if(clickedPiece.GetType() == typeof(Pawn))
 						{
 							//promotion check
+							
 							if(_y == 7)
 								{	//turn white pawn into a queen 	
 									activeMen.Remove(clickedPiece.gameObject);
@@ -252,6 +271,8 @@ public class BoardControl : MonoBehaviour
 									clickedPiece = chessPieces[_x, _y];
 									activeMen.Insert(pieceIndex, clickedPiece.gameObject);
 									activeMen.RemoveAt(activeMen.Count - 1);
+									activeMenMesh[pieceIndex] = clickedPiece.GetComponent<MeshFilter>();									
+									oldPosition = new Vector3(oldPosition.x, .73f, oldPosition.z);
 								}
 							if(_y == 0)
 								{	//turn black pawn into a queen 
@@ -260,6 +281,9 @@ public class BoardControl : MonoBehaviour
 									spawnChessMen(7, _x, _y, blackFacingDirection);
 									clickedPiece = chessPieces[_x, _y];
 									activeMen.Insert(pieceIndex, clickedPiece.gameObject);
+									activeMen.RemoveAt(activeMen.Count - 1);
+									activeMenMesh[pieceIndex] = clickedPiece.GetComponent<MeshFilter>();
+									oldPosition = new Vector3(oldPosition.x, .73f, oldPosition.z);
 								}
 							//white team
 							if(clickedPiece.CurrentY == 1 && _y == 3)	
@@ -285,10 +309,10 @@ public class BoardControl : MonoBehaviour
 						{	//movement for castling
 							if(isWhiteTurn)
 								{	
-									if(whiteKingHasMoved == false)
+									if(!whiteKingHasMoved)
 										{
 											whiteKingHasMoved = true;
-											if(kingSideCastle == true)
+											if(kingSideCastle)
 												{
 													//move the king side white rook
 													castlePiece = chessPieces[7, 0];
@@ -299,7 +323,7 @@ public class BoardControl : MonoBehaviour
 													chessPieces[5, 0] = castlePiece;
 													castlePiece = null;
 												}
-											else if(queenSideCastle == true)
+											else if(queenSideCastle)
 												{
 													//move the queen side white rook
 													castlePiece = chessPieces[0, 0];
@@ -314,10 +338,10 @@ public class BoardControl : MonoBehaviour
 								}
 							else
 								{
-									if(blackKingHasMoved == false)
+									if(!blackKingHasMoved)
 										{
 											blackKingHasMoved = true;
-											if(kingSideCastle == true)
+											if(kingSideCastle)
 												{
 													//move the king side black rook
 													castlePiece = chessPieces[7, 7];
@@ -328,7 +352,7 @@ public class BoardControl : MonoBehaviour
 													chessPieces[5, 7] = castlePiece;
 													castlePiece = null;
 												}
-											else if(queenSideCastle == true)
+											else if(queenSideCastle)
 												{
 													//move the queen side black rook
 													castlePiece = chessPieces[0, 7];
@@ -353,10 +377,48 @@ public class BoardControl : MonoBehaviour
 					isWhiteTurn = !isWhiteTurn;			
 					removeFromPlay();
 					moveHistory.Add(getPiecePos());
+					moveConfirmationCheck();
 				}		
-			boardHighlights.Instance.hideHighlights();
-			clickedPiece = null;
-			resetNotation();
+			completeTurn();
+		}
+
+	private void moveConfirmationCheck()
+		{
+			confirmedMove = false;
+			cancelMove = false;
+			confirmMovePanel.SetActive(true);			
+		}
+
+	private void completeTurn ()
+	{
+		int moveCount = 5;
+		float maxVal = 1f;
+		float moveGap = .03f;
+		boardHighlights.Instance.hideHighlights ();
+		clickedPiece = null;
+		resetNotation ();
+		moveScrollHor.value = 0f;
+		if(moveTexts.Count > moveCount)
+			{		
+				float setBar = maxVal - ((moveTexts.Count - moveCount) * moveGap);
+				moveScrollVert.value = setBar;				
+			}
+		else
+			{
+				moveScrollVert.value = maxVal;
+			}
+		if (cancelMove) 
+			{
+				/*
+
+					add function to cancel the move just made
+
+				*/
+
+				//moveHistory.RemoveAt(moveHistory.Count - 1);
+				
+			}
+
 		}
 
 	private void removeFromPlay()
@@ -364,7 +426,7 @@ public class BoardControl : MonoBehaviour
 			int outOfPlayRow = 0;
 			for(int i = 0; i < activeMen.Count; i++)
 				{
-					int y = (int)activeMen[i].transform.position.z;
+					float y = activeMen[i].transform.position.z;
 					Vector3 removedPos = activeMen[i].transform.position;
 					if(y > 8)
 						{							
@@ -496,7 +558,7 @@ public class BoardControl : MonoBehaviour
 			setCanvasText();
 		}
 
-	private void selectedMoveBG()
+	private void colorSelectedMoveBG()
 		{
 			if(selectedMove != -1)
 				{		
@@ -511,47 +573,30 @@ public class BoardControl : MonoBehaviour
 				}
    		}
 
-	private void presentMove()
+	private void displayMoveHistory ()
 		{
-			char[] presentMove = moveHistory[selectedMove].ToCharArray();
-			char[] pieceLabel;
-			Vector3 piecePos;
-			int x, y, n, pieceIndex;
+			char[] presentMove = moveHistory [selectedMove].ToCharArray ();
 			char _x, _y;
-			char label = ' ';
-			Quaternion facingDir;
-			Chesspieces currentPiece;
-
-			if(selectedMove != moveTextButtons.Count - 1)
-				boardHighlights.Instance.hideHighlights();
-
-			for(int i = 0; i < activeMen.Count; i++)
-				{
-					piecePos = activeMen[i].transform.position;
-					currentPiece = activeMen[i].GetComponent<Chesspieces>();
-					pieceLabel = getPieceNotation(currentPiece).ToCharArray();
+			Vector3 piecePos;
+			int ix, iy, n, pieceIndex;
+			
+			if (selectedMove != moveTextButtons.Count - 1)
+				boardHighlights.Instance.hideHighlights ();
+	
+			for (int i = 0; i < activeMen.Count; i++) 
+				{					
+					piecePos = activeMen [i].transform.position;
 					n = i * 3;
-					_x = presentMove[n + 1];
-					_y = presentMove[n + 2];
-					label = pieceLabel[0];	
-					if(label != presentMove[n])
-						{
-							pieceIndex = getChessMenIndex(activeMen[i], presentMove[n]);
-							if(currentPiece.isWhite == true)
-								facingDir = whiteFacingDirection;
-							else
-								facingDir = blackFacingDirection;
-							activeMen.Remove(activeMen[i].gameObject);
-							Destroy(activeMen[i].gameObject);
-							spawnChessMen(pieceIndex, _x, _y, facingDir);
-							activeMen.Insert(i, currentPiece.gameObject);
-							activeMen.RemoveAt(activeMen.Count - 1);	
-						}
-					x = (int)char.GetNumericValue(_x);
-					y = (int)char.GetNumericValue(_y);
-					activeMen[i].transform.position = setNewPosition(piecePos, x, y);	
-					//currentPiece.setPosition(x, y);	
-				}			
+					_x = presentMove [n + 1];
+					_y = presentMove [n + 2];
+					ix = (int)char.GetNumericValue(_x);
+					iy = (int)char.GetNumericValue(_y);	
+					pieceIndex = getChessMenIndex(activeMen [i], presentMove [n]);	
+					Mesh currentMesh = activeMenMesh[i].GetComponent<MeshFilter>().mesh;						
+					Mesh newMesh = chessMen[pieceIndex].GetComponent<MeshFilter>().sharedMesh;
+					currentMesh = newMesh;
+					activeMen [i].transform.position = setNewPosition(piecePos, ix, iy);						
+				}									
 		}
 
 	private int getChessMenIndex(GameObject go, char pieceCode)
@@ -589,6 +634,25 @@ public class BoardControl : MonoBehaviour
 				}		
 		}
 
+	private void quitGameButtonListener()
+		{
+			Application.Quit();
+		}
+
+	private void confirmButtonListener()
+		{
+			confirmedMove = true;
+			confirmMovePanel.SetActive(false);
+		}
+
+	private void cancelButtonListener()
+		{
+			//cancelMove = true;
+			confirmMovePanel.SetActive(false);
+
+			confirmedMove = true; // temporarily here			
+		}
+
 	private void textButtonListener(int index)
 		{			
 			selectedMove = index;
@@ -613,7 +677,7 @@ public class BoardControl : MonoBehaviour
 			RectTransform newMoveRectPos = move.GetComponent<RectTransform>();
 			float textSpacing = -8f;
 			float YPos = ((gameMoveList.Count - 1) * textSpacing) - 7f;
-			Vector3 setTextPos = new Vector3(19f, YPos, 0f);
+			Vector3 setTextPos = new Vector3(17f, YPos, 0f);
 			newMoveRectPos.transform.localScale = new Vector3(1f, 1f, 1f);
 			newMoveRectPos.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
 			newMoveRectPos.transform.localPosition = setTextPos;
@@ -629,6 +693,9 @@ public class BoardControl : MonoBehaviour
 
 			foreach(GameObject go in activeMen)
 				Destroy(go);
+
+			foreach(MeshFilter mesh in activeMenMesh)
+				Destroy(mesh);
 
 			foreach(Text nextMove in moveTexts)
 				Destroy(nextMove);
@@ -647,6 +714,7 @@ public class BoardControl : MonoBehaviour
 			moveHistory.Clear();
 			gameMoveList.Clear();
 			spawnAllPieces();
+			setMesh();
 			resetNotation();
 			selectedMove = -1;
 		}
@@ -660,15 +728,7 @@ public class BoardControl : MonoBehaviour
 			newz += (TileSize * z) + TileOffset;
 			return (new Vector3(newx, newy, newz));
 		}
-
-	private void toggleChange()
-		{
-			if(toggleBoard == true)
-				toggleBoard = false;
-			else 
-				toggleBoard = true;				
-		}
-
+	
 	private void colorUpdate(Renderer rend, Color col)
 		{
 			rend.material.shader = Shader.Find("Standard");
@@ -686,10 +746,9 @@ public class BoardControl : MonoBehaviour
 		{
 			RaycastHit hit;
 			Renderer rend;
-
 			if(!Camera.main)
 				return;
-			
+
 			if(Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100.0f, LayerMask.GetMask("ChessSquare")))
 				{					
 					selectedX = (int)hit.point.x;
@@ -706,7 +765,7 @@ public class BoardControl : MonoBehaviour
 									colorUpdate(lastSquare, lastColor);
 								}
 						}
-					if(haveSquareColor == false)
+					if(!haveSquareColor)
 						{																	
 							getColor = rend.material.color;
 							lastColor = getColor;
@@ -721,25 +780,19 @@ public class BoardControl : MonoBehaviour
 				{
 					selectedX = -1;
 					selectedY = -1;	
-					//setChessBoardColor();	
 					haveSquareColor = false;
 					selectedSquare = "";	
-					if(lastSquare != null)
-						{	
-							colorUpdate(lastSquare, lastColor);
-						}	
+					if(lastSquare != null)							
+						colorUpdate(lastSquare, lastColor);						
 					lastSquare = null;
 					currentSquare = "";
-				}			
-
+				}	
 		}
 
 	private void colorSelectedPiece()
 		{
 			RaycastHit pieceCheck;
-			//RaycastHit pieceHit;
 			Renderer pieceRend;
-
 			if(!Camera.main)
 				return;
 			
@@ -758,15 +811,14 @@ public class BoardControl : MonoBehaviour
 							pieceColor = pieceRend.material.color;
 							havePieceColor = true;
 						}					
-					lerpedPieceColor = Color.Lerp(selectedColor, pieceColor, Mathf.PingPong(Time.time, 1));
+					lerpedPieceColor = Color.Lerp(selectedColor, pieceColor, Mathf.PingPong(Time.time, .75f));
 					colorUpdate(pieceRend, lerpedPieceColor);
 				}
-
 			else
 				{
 					setChessMenColor();
 					havePieceColor = false;
-				}
+				}	
 		}
 
 	private void colorChanger()
@@ -824,11 +876,21 @@ public class BoardControl : MonoBehaviour
 				}
 			return tempMoveHist;
 		}
+
+	private void setMesh()
+	{
+		for(int i = 0; i < activeMen.Count; i++)		
+			{			
+				MeshFilter newMesh = activeMen[i].GetComponent<MeshFilter> ();
+				activeMenMesh.Add(newMesh);
+			}
+	}
 	
 	private void spawnAllPieces()
 		{
 			gameMoveList = new List<string>();
 			activeMen = new List<GameObject>();
+			activeMenMesh = new List<MeshFilter>();
 			chessPieces = new Chesspieces[9, 9];
 			enPassantMove = new int[2]{-1, -1};
 			pieceStartPos = new int[2]{-1, -1};
