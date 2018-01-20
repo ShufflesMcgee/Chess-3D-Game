@@ -21,6 +21,7 @@ public class BoardControl : MonoBehaviour
 	private Renderer lastSquare = null;
 
 	public Chesspieces[,] chessPieces {set; get;}
+	private Chesspieces checkingPiece;
 	private Chesspieces clickedPiece;
 	private Chesspieces castlePiece;
 
@@ -30,6 +31,7 @@ public class BoardControl : MonoBehaviour
 	private int selectedX = -1;
 	private int selectedY = -1;
 	private int selectedMove = -1;
+	private int moveCount = 0;
 
 	public int[] enPassantMove {set; get;}
 	public int[] pieceStartPos {set; get;}
@@ -60,6 +62,10 @@ public class BoardControl : MonoBehaviour
 	public bool queenSideCastle = false;
 	public bool kingSideCastle = false;
 	public bool isWhiteTurn = true;
+	public bool whiteKingInCheck = false;
+	public bool blackKingInCheck = false;
+	public bool whiteInCheckMate = false;
+	public bool	blackInCheckMate = false;
 
 	public Scrollbar moveScrollVert;
 	public Scrollbar moveScrollHor;
@@ -180,6 +186,7 @@ public class BoardControl : MonoBehaviour
 	private void selectChessPiece(int x, int y)
 		{
 			resetNotation();
+
 			if(chessPieces[x, y] == null)
 				return;
 
@@ -200,8 +207,12 @@ public class BoardControl : MonoBehaviour
 
 			if(!hasAtleastOneMove)
 				return;
-
+			
 			clickedPiece = chessPieces[x, y];
+			
+			/*
+			checkForCheckHighlights(allowedMoves);
+			*/
 			boardHighlights.Instance.highlightAllowedMoves(allowedMoves);
 			pieceStartPos[0] = x;
 			pieceStartPos[1] = y;
@@ -209,8 +220,75 @@ public class BoardControl : MonoBehaviour
 
 	private void moveSelectedPiece(int _x, int _y)
 		{
+			Chesspieces tempPiece = null;
+			bool tempPieceTake = false;
 			if(allowedMoves[_x,_y])
-				{
+				{					
+					int tempX = clickedPiece.CurrentX;
+					int tempY = clickedPiece.CurrentY;
+					int kingX, kingY;
+					checkingPiece = chessPieces[tempX, tempY];
+					if(isWhiteTurn && whiteKingInCheck)
+					{	/*		
+						if(chessPieces[_x,_y] != null)
+						{
+							tempPieceTake = true;
+							tempPiece = chessPieces[_x,_y];
+							tempPiece.setPosition(9, 9);
+							chessPieces[9, 9] = tempPiece;
+						}		*/									
+						chessPieces[tempX, tempY] = null;	
+						checkingPiece.setPosition(_x,_y);						
+						chessPieces[_x,_y] = checkingPiece;
+						kingX = activeMen[0].GetComponent<Chesspieces>().CurrentX;
+						kingY = activeMen[0].GetComponent<Chesspieces>().CurrentY;
+						if(checkSystem(16, 31, kingX, kingY))
+						{
+							Debug.Log("white in check");	
+						}
+						if(tempPieceTake)
+						{
+							tempPieceTake = false;	
+							tempPiece = chessPieces[9, 9];
+							tempPiece.setPosition(_x,_y);	
+							chessPieces[_x,_y] = tempPiece;
+						}			
+						checkingPiece.setPosition(tempX, tempY);				
+						chessPieces[tempX, tempY] = checkingPiece;	
+						Debug.Log("white: ");
+						Debug.Log(whiteKingInCheck);
+					}
+					else if(!isWhiteTurn && blackKingInCheck)
+					{			/*				
+						if(chessPieces[_x,_y] != null)
+						{
+							tempPieceTake = true;
+							tempPiece = chessPieces[_x,_y];
+							tempPiece.setPosition(9, 9);
+							chessPieces[9, 9] = tempPiece;
+						}		*/									
+						chessPieces[tempX, tempY] = null;	
+						checkingPiece.setPosition(_x,_y);						
+						chessPieces[_x,_y] = checkingPiece;
+						kingX = activeMen[16].GetComponent<Chesspieces>().CurrentX;
+						kingY = activeMen[16].GetComponent<Chesspieces>().CurrentY;
+						if(checkSystem(0, 15, kingX, kingY))
+						{
+							Debug.Log("black in check");	
+						}
+						if(tempPieceTake)
+						{
+							tempPieceTake = false;	
+							tempPiece = chessPieces[9, 9];
+							tempPiece.setPosition(_x,_y);	
+							chessPieces[_x,_y] = tempPiece;
+						}			
+						checkingPiece.setPosition(tempX, tempY);				
+						chessPieces[tempX, tempY] = checkingPiece;	
+						Debug.Log("black: ");
+						Debug.Log(blackKingInCheck);
+					}
+					clickedPiece = chessPieces[tempX, tempY];
 					Vector3 oldPosition = clickedPiece.transform.position;
 					Chesspieces takingPiece = chessPieces[_x, _y];
 					Vector3 removedPiecePos = new Vector3();
@@ -373,14 +451,285 @@ public class BoardControl : MonoBehaviour
 					movedPieceNotation = getPieceNotation(clickedPiece);
 					pieceEndPos[0] = _x;
 					pieceEndPos[1] = _y;
+					//if(isWhiteTurn)
+					//	whiteKingInCheck = false;
+					//else
+					//	blackKingInCheck = false;										
+					isWhiteTurn = !isWhiteTurn;	
+					//isKingInCheck();		
 					moveNotation();
-					isWhiteTurn = !isWhiteTurn;			
 					removeFromPlay();
 					moveHistory.Add(getPiecePos());
-					moveConfirmationCheck();
+					moveConfirmationCheck();					
 				}		
-			completeTurn();
+			completeTurn();	
+			//isKingInCheckMate();		
 		}
+
+	private void isKingInCheckMate()
+	{
+		Chesspieces tempPiece = null;
+		bool[,] checkMoves;
+		bool tempPieceTake = false;
+		bool notCheckMate = false;
+		int kingIndex, enemyStartIndex, enemyEndIndex, moveCount;
+		int min = 0;
+		int max = 8;
+		int range = 15;
+		if(isWhiteTurn)
+		{
+			kingIndex = 0;
+			enemyStartIndex = 16;
+			enemyEndIndex = 31;
+		}
+		else
+		{
+			kingIndex = 16;
+			enemyStartIndex = 0;
+			enemyEndIndex = 15;
+		}
+		moveCount = kingMoveCount(kingIndex, enemyStartIndex, enemyEndIndex);
+		listPiecesPos(); 
+		int kingX = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentX;				
+		int kingY = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentY;
+		Debug.Log(moveCount);
+		if(isWhiteTurn)
+		{
+			if(moveCount == 0)		//if king cant move out of check		
+			{			//check if any of the other pieces can defend
+				for(int i = kingIndex; i <= kingIndex + range; i++)
+				{
+					int whiteX = activeMen[i].GetComponent<Chesspieces>().CurrentX;
+					int whiteY = activeMen[i].GetComponent<Chesspieces>().CurrentY;
+					if(whiteX < max && whiteY < max)
+					{
+						checkMoves = chessPieces[whiteX, whiteY].possibleMove();
+						checkingPiece = chessPieces[whiteX, whiteY];						
+						for(int l = min; l < max; l++)
+							for(int m = min; m < max; m++)
+							{
+								if(checkMoves[l, m])
+								{	/*
+									if(chessPieces[l, m] != null)
+									{
+										tempPieceTake = true;
+										tempPiece = chessPieces[l, m];
+										tempPiece.setPosition(9, 9);
+										chessPieces[9, 9] = tempPiece;
+									}		*/	
+									chessPieces[whiteX, whiteY] = null;
+									checkingPiece.setPosition(l, m);
+									chessPieces[l, m] = checkingPiece;
+									whiteInCheckMate = checkSystem(16, 31, kingX, kingY);
+									Debug.Log(whiteInCheckMate);
+									if(!whiteInCheckMate)// if any spots allow for not check mate
+									{
+										notCheckMate = true;
+										Debug.Log("not in checkmate");
+									}
+									if(tempPieceTake)
+									{
+										tempPieceTake = false;	
+										tempPiece = chessPieces[9, 9];
+										tempPiece.setPosition(l, m);								
+										chessPieces[l, m] = tempPiece;									
+									}	
+									checkingPiece.setPosition(whiteX, whiteY);
+									chessPieces[whiteX, whiteY] = checkingPiece;																
+								}
+							}
+						}
+					} 
+					if(notCheckMate)
+						whiteInCheckMate = false;
+				}
+				listPiecesPos();
+			}
+		
+/*
+	else
+	{
+			kingIndex = 16;
+			kingX = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentX;				
+			kingY = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentY;
+			for(int k = kingIndex; k <= kingIndex + range; k++)
+			{
+
+
+				int blackX = activeMen[k].GetComponent<Chesspieces>().CurrentX;
+				int blackY = activeMen[k].GetComponent<Chesspieces>().CurrentY;
+				if(blackX < max && blackY < max)
+				{
+	 				checkMoves = chessPieces[blackX, blackY].possibleMove();
+					checkingPiece = chessPieces[blackX, blackY];					
+					for(int n = min; n < max; n++)
+						for(int o = min; o < max; o++)
+						{
+							if(checkMoves[n, o])
+							{											
+								if(chessPieces[n, o] != null)
+								{
+									tempPieceTake = true;
+									tempPiece = chessPieces[n, o];
+									tempPiece.setPosition(9, 9);
+									chessPieces[9, 9] = tempPiece;
+								}
+		
+								chessPieces[blackX, blackY] = null;	
+								checkingPiece.setPosition(n, o);						
+								chessPieces[n, o] = checkingPiece;
+								blackInCheckMate = checkSystem(0, 15, kingX, kingY);
+								Debug.Log(blackInCheckMate);
+								if(!blackInCheckMate)// if any spots allow for not check mate
+								{
+									notCheckMate = true;
+									Debug.Log("not in check");
+								}
+								if(tempPieceTake)
+								{
+									tempPieceTake = false;	
+									tempPiece = chessPieces[9, 9];
+									tempPiece.setPosition(n, o);								
+									chessPieces[n, o] = tempPiece;									
+								}	
+								checkingPiece.setPosition(blackX, blackY);
+								chessPieces[blackX, blackY] = checkingPiece;								
+							}
+						}
+				}
+			}
+			if(notCheckMate)
+				blackInCheckMate = false;
+		}
+*/
+	}
+
+	private int kingMoveCount(int kingIndex, int start, int end)
+	{
+		int moveCount = 0;
+		int min = 0;
+		int max = 8;				
+		int kingX = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentX;				
+		int kingY = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentY;
+		bool[,] checkMoves;
+		checkMoves = chessPieces[kingX, kingY].possibleMove();
+		for(int l = min; l < max; l++)
+				for(int m = min; m < max; m++)
+				{
+					if(checkMoves[l, m])		//the king can move here
+					{
+						moveCount ++;
+						if(checkSystem(start, end, l, m)) 	//an enemy piece can move here
+							moveCount --;						
+					}
+				}
+		return moveCount;
+	}
+
+	private void checkForCheckHighlights(bool [,] moves)
+	{
+		int x = clickedPiece.CurrentX;
+		int y = clickedPiece.CurrentY;
+		int kingX, kingY, kingIndex, startCheck, endCheck;
+
+		if(isWhiteTurn)	
+		{
+			startCheck = 16;			
+			endCheck = 31;
+			kingIndex = 0;
+		}
+		else
+		{
+			startCheck = 0;			
+			endCheck = 15;
+			kingIndex = 16;
+		}
+		kingX = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentX;				
+		kingY = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentY;
+		for(int i = 0; i < 8; i++)
+			for(int j = 0; j < 8; j++)
+			{
+				if(moves[i, j])
+				{	Debug.Log(i + ", " + j);					
+					int tempX = clickedPiece.CurrentX;
+					int tempY = clickedPiece.CurrentY;
+					chessPieces[clickedPiece.CurrentX, clickedPiece.CurrentY] = null;
+					clickedPiece.setPosition(i, j);
+					chessPieces[i, j] = clickedPiece;
+					if(checkSystem(startCheck, endCheck, kingX, kingY)) //will king be in check after move
+					{
+						Debug.Log("remove");
+						moves[i, j] = false;
+					}
+					chessPieces[i, j] = null;
+					clickedPiece.setPosition(tempX, tempY);
+					chessPieces[tempX, tempY] = clickedPiece;
+				}
+			}
+	}
+
+	private void isKingInCheck()
+	{				
+		int kingX, kingY, kingIndex, startCheck, endCheck;
+		if(isWhiteTurn)	
+		{
+			startCheck = 16;			
+			endCheck = 31;
+			kingIndex = 0;
+			kingX = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentX;				
+			kingY = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentY;
+			whiteKingInCheck = checkSystem(startCheck, endCheck, kingX, kingY);
+		}
+		else
+		{
+			startCheck = 0;			
+			endCheck = 15;
+			kingIndex = 16;
+			kingX = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentX;				
+			kingY = activeMen[kingIndex].GetComponent<Chesspieces>().CurrentY;
+			blackKingInCheck = checkSystem(startCheck, endCheck, kingX, kingY);
+		}
+	}
+
+	private void listPiecesPos()
+	{
+		
+		for(int l = 7; l >= 0; l--)
+		{
+			string chessLine = "";
+			for(int m = 0; m < 8; m++)		//always displays the white at the bottom of the matrix		
+			{
+				chessLine += "[";//" " + m + ", " + l + "[";
+				if(chessPieces[m, l] != null)
+					chessLine += getPieceNotation(chessPieces[m, l]); 
+				else
+					chessLine += "0";
+				chessLine += "]";
+			}
+			Debug.Log(chessLine);
+		}
+		
+	}
+
+	private bool checkSystem(int start, int end, int pieceX, int pieceY)
+	{
+		bool[,] checkMoves;
+		for(int j = start; j <= end; j++)
+			{
+				int _x = activeMen[j].GetComponent<Chesspieces>().CurrentX;
+				int _y = activeMen[j].GetComponent<Chesspieces>().CurrentY;
+				if(_x < 8 && _y < 8)
+				{
+	 				checkMoves = chessPieces[_x, _y].possibleMove();
+					if(checkMoves[pieceX, pieceY])
+					{	
+						//Debug.Log("You are in Check!");				
+						return true;						
+					}
+				}
+			}
+		return false;
+	}
 
 	private void moveConfirmationCheck()
 		{
@@ -526,10 +875,7 @@ public class BoardControl : MonoBehaviour
 			float moveNumber = gameMoveList.Count + 1f;
 			newMove += moveNumber.ToString();
 			newMove += ": ";
-			//if(isWhiteTurn)
-			//	newMove += " White";
-			//else
-			//	newMove += " Black";
+			
 			if(kingSideCastle)
 				newMove += " O - O";
 			else if(queenSideCastle)
@@ -554,6 +900,10 @@ public class BoardControl : MonoBehaviour
 					newMove += " e.p.";
 					enPassNote = false;
 				}
+			if(isWhiteTurn && whiteKingInCheck)
+				newMove += "!";
+			else if(!isWhiteTurn && blackKingInCheck)
+				newMove += "!";
 			gameMoveList.Add(newMove);
 			setCanvasText();
 		}
@@ -710,6 +1060,10 @@ public class BoardControl : MonoBehaviour
 			isWhiteTurn = true;
 			whiteKingHasMoved = false;
 			blackKingHasMoved = false;
+			whiteKingInCheck = false;
+	 		blackKingInCheck = false;
+	 		whiteInCheckMate = false;
+			blackInCheckMate = false;
 			boardHighlights.Instance.hideHighlights();
 			moveHistory.Clear();
 			gameMoveList.Clear();

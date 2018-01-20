@@ -68,7 +68,7 @@ public class CameraControl : MonoBehaviour {
 		{	
 			if(Camera.current != null)
      			{
-					float zoom = Input.GetAxis("Mouse ScrollWheel");					
+					float zoom = Input.GetAxis("Mouse ScrollWheel");			
 					if(zoom > zero)
 						{
 							zoomSlider.value -= zoomInc;
