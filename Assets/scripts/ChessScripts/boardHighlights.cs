@@ -31,11 +31,11 @@ public class boardHighlights : MonoBehaviour
 				return go;
 		}
 
-	public void highlightAllowedMoves(bool[,] moves)
+	public void highlightAllowedMoves(bool[,] moves, int x, int y)
 		{
-			for(int i = 0; i < 8; i++)
+			for(int i = 0; i < x; i++)
 				{
-					for(int j = 0; j < 8; j++)
+					for(int j = 0; j < y; j++)
 						{
 							if(moves[i,j])
 								{

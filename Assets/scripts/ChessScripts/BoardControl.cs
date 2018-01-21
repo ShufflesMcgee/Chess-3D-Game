@@ -16,9 +16,9 @@ public class BoardControl : MonoBehaviour
 	private List<Button> moveTextButtons;
 	private List<MeshFilter> activeMenMesh;
 	private List<MeshFilter> chessMenMesh;
-	List<GameObject> canvasGo;
+	public List<GameObject> canvasGo;
 
-	private Renderer lastSquare = null;
+	private Renderer lastSquare = null;	
 
 	public Chesspieces[,] chessPieces {set; get;}
 	private Chesspieces checkingPiece;
@@ -213,7 +213,7 @@ public class BoardControl : MonoBehaviour
 			/*
 			checkForCheckHighlights(allowedMoves);
 			*/
-			boardHighlights.Instance.highlightAllowedMoves(allowedMoves);
+			boardHighlights.Instance.highlightAllowedMoves(allowedMoves, 8, 8);
 			pieceStartPos[0] = x;
 			pieceStartPos[1] = y;
 		}
@@ -1160,7 +1160,7 @@ public class BoardControl : MonoBehaviour
 							havePieceColor = false;
 							setChessMenColor();
 						}
-					if(havePieceColor == false)
+					if(!havePieceColor)
 						{
 							pieceColor = pieceRend.material.color;
 							havePieceColor = true;
