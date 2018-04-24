@@ -66,26 +66,23 @@ public class CameraControl : MonoBehaviour {
 
 	private void Update () 
 		{	
-			if(Camera.current != null)
-     			{
-					float zoom = Input.GetAxis("Mouse ScrollWheel");			
-					if(zoom > zero)
-						{
-							zoomSlider.value -= zoomInc;
-						}
-					else if(zoom < zero)
-						{
-							zoomSlider.value += zoomInc;
-						}
-					zoomVal = zoomSlider.value;
-					if (board.confirmedMove) 
-						{
-							moveBehind ();
-							board.confirmedMove = false;
-						}
-					Camera.main.fieldOfView = Mathf.Lerp(Camera.main.fieldOfView, zoomVal, Time.deltaTime * lerpSpeed);	
-					cameraRoot.rotation = Quaternion.Slerp(cameraRoot.rotation, targetRot, Time.deltaTime * lerpSpeed);
+			float zoom = Input.GetAxis("Mouse ScrollWheel");			
+			if(zoom > zero)
+				{
+					zoomSlider.value -= zoomInc;
 				}
+			else if(zoom < zero)
+				{
+					zoomSlider.value += zoomInc;
+				}
+			zoomVal = zoomSlider.value;
+			if (board.confirmedMove) 
+				{
+					moveBehind ();
+					board.confirmedMove = false;
+				}
+			Camera.main.fieldOfView = Mathf.Lerp(Camera.main.fieldOfView, zoomVal, Time.deltaTime * lerpSpeed);	
+			cameraRoot.rotation = Quaternion.Slerp(cameraRoot.rotation, targetRot, Time.deltaTime * lerpSpeed);
 		}
 
 	private void rotCam(string dir)

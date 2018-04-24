@@ -31,24 +31,13 @@ public class BoardControl : MonoBehaviour
 	private int selectedX = -1;
 	private int selectedY = -1;
 	private int selectedMove = -1;
-	private int moveCount = 0;
 
-	public int[] enPassantMove {set; get;}
-	public int[] pieceStartPos {set; get;}
-	public int[] pieceEndPos {set; get;}
+	public int [] enPassantMove {set; get;}
+	public int [] pieceStartPos {set; get;}
+	public int [] pieceEndPos {set; get;}
 
-	private Color lerpedSquareColor = Color.white;
-	private Color lerpedPieceColor = Color.white;
-	private Color getColor = Color.white;
-	private Color pieceColor = Color.white;
-	private Color blackHue = new Color(.10f, .10f, .10f);
-	private Color selectedPieceFlash = new Color(.78f, .74f, .47f);
-	private Color enemyFlash = new Color(.62f, .32f, .32f);
-	private Color allyFlash = new Color(.14f, .41f, .61f);
-	private Color textHighlight = new Color(1.14f, 1f, .5f);
-	private Color textBG = new Color(197, 197, 197);
-	private Color selectedColor;
-	private Color lastColor = Color.white;
+	private Color lerpedSquareColor, lerpedPieceColor, getColor, lastColor, pieceColor, blackHue;
+	private Color enemyFlash, allyFlash, selectedColor, selectedPieceFlash, textHighlight, textBG;
 
 	private bool haveSquareColor = false;
 	private bool havePieceColor = false;
@@ -98,8 +87,9 @@ public class BoardControl : MonoBehaviour
 	private void Start()
 		{			
 			Instance = this;
+			setColors();
 			spawnAllPieces();
-			setMesh();
+			setMesh();			
 			chessMenMesh = new List<MeshFilter>();
 			foreach(GameObject go in activeMen)
 				chessMenMesh.Add(go.GetComponent<MeshFilter>());
@@ -113,74 +103,50 @@ public class BoardControl : MonoBehaviour
 
 	private void Update () 
 		{	
-			if(Input.GetKeyDown("a"))
-				{
-					if(colorToggle != "a")
-						colorToggle = "a";
-					else 
-						colorToggle = "";
-				}
-			else if(Input.GetKeyDown("e"))
-				{
-					if(colorToggle != "e")
-						colorToggle = "e";
-					else 
-						colorToggle = "";
-				}		
-			colorChanger();
-															
-			if(Input.GetKeyDown("space"))
-				{
-					if(toggleBoard)
-						toggleBoard = false;
-					else 
-						toggleBoard = true;		
-				}
+			if(Input.GetKeyDown(KeyCode.A))
+				colorChanger("a");
+			if(Input.GetKeyDown(KeyCode.E))
+				colorChanger("e");			
+			if(Input.GetKeyDown(KeyCode.Space))
+				toggleBoard = !toggleBoard;	
+			
 			if(toggleBoard)
-				DrawChessboard();		
-	
-			displayMoves = "";
-			for(int i = 0; i < gameMoveList.Count; i++)
-				{
-					displayMoves += i.ToString() + gameMoveList[i];
-				}	
-			colorSelectedMoveBG();
-			if(selectedMove != -1)
-				displayMoveHistory();
+				DrawChessboard();
+
+			moveHistoryDisplay();
 
 			if(Input.GetMouseButtonDown(0))
-				{
-					if(selectedMove == -1 || selectedMove == (moveTextButtons.Count - 1))
-						{							
-							if(selectedX >= 0 && selectedY >= 0 && selectedX < 8 && selectedY < 8)
-								{
-									if(clickedPiece == null)
-										selectChessPiece(selectedX, selectedY);
-									else
-										moveSelectedPiece(selectedX, selectedY);
-								}
-						}												
-				}
+			{
+				if(selectedMove == -1 || selectedMove == (moveTextButtons.Count - 1))
+				{							
+					if(selectedX >= 0 && selectedY >= 0 && selectedX < 8 && selectedY < 8)
+					{
+						if(clickedPiece == null)
+							selectChessPiece(selectedX, selectedY);
+						else
+							moveSelectedPiece(selectedX, selectedY);
+					}
+				}												
+			}
 			colorSelectedSquare();
 			mouseOverSquare();
 			colorSelectedPiece();	
-
+	/*
 			if(Input.GetKeyDown("l"))
-				{
-					/*
-					for(int i = 0; i < moveHistory.Count; i++)
-						{							
-							Debug.Log(moveHistory[i]);
-						}
-						Debug.Log(moveHistory[moveHistory.Count - 1]);
-						
-					for(int i = 0; i < chessMenMesh.Count; i++)
-						{							
-							Debug.Log(i);
-							Debug.Log(chessMenMesh[i]);
-						}
-					*/
+			{
+				
+				for(int i = 0; i < moveHistory.Count; i++)
+				{							
+					Debug.Log(moveHistory[i]);
 				}
+				Debug.Log(moveHistory[moveHistory.Count - 1]);
+				for(int i = 0; i < chessMenMesh.Count; i++)
+				{							
+					Debug.Log(i);
+					Debug.Log(chessMenMesh[i]);
+				}				
+			}
+	*/
 		}
 
 	private void selectChessPiece(int x, int y)
@@ -204,7 +170,6 @@ public class BoardControl : MonoBehaviour
 						if(allowedMoves[i, j])
 							hasAtleastOneMove = true;
 					}
-
 			if(!hasAtleastOneMove)
 				return;
 			
@@ -468,6 +433,39 @@ public class BoardControl : MonoBehaviour
 
 	private void isKingInCheckMate()
 	{
+/*
+
+	public boolean checkmated(Player player) {
+	  if (!player.getKing().inCheck() || player.isStalemated()) {
+	      return false; //not checkmate if we are not 
+	                    //in check at all or we are stalemated.
+	  }
+	
+	  //therefore if we get here on out, we are currently in check...
+	
+	  Pieces myPieces = player.getPieces();
+	
+	  for (Piece each : myPieces) {
+	
+	      each.doMove(); //modify the state of the board
+	
+	      if (!player.getKing().inCheck()) { //now we can check the modified board
+	          each.undoMove(); //undo, we dont want to change the board
+	          return false;
+	          //not checkmate, we can make a move, 
+	          //that results in our escape from checkmate.
+	      }
+	
+	      each.undoMove();
+	
+	  }
+	  return true; 
+	  //all pieces have been examined and none can make a move and we have       
+	  //confimred earlier that we have been previously checked by the opponent
+	  //and that we are not in stalemate.
+}
+
+*/
 		Chesspieces tempPiece = null;
 		bool[,] checkMoves;
 		bool tempPieceTake = false;
@@ -780,8 +778,7 @@ public class BoardControl : MonoBehaviour
 					if(y > 8)
 						{							
 							activeMen[i].transform.position = setNewPosition(removedPos, outOfPlayRow, 9);
-							outOfPlayRow++;
-														
+							outOfPlayRow++;														
 						}
 				}
 		}
@@ -827,6 +824,39 @@ public class BoardControl : MonoBehaviour
 					return "P";
 				}
 		}
+
+	private void moveHistoryDisplay()
+	{
+		displayMoves = "";
+		for(int i = 0; i < gameMoveList.Count; i++)
+			displayMoves += i.ToString() + gameMoveList[i];		
+		colorSelectedMoveBG();
+		if(selectedMove != -1)
+		{
+			char [] presentMove = moveHistory [selectedMove].ToCharArray ();
+			char _x, _y;
+			Vector3 piecePos;
+			int ix, iy, n, pieceIndex;
+			
+			if(selectedMove != moveTextButtons.Count - 1)
+				boardHighlights.Instance.hideHighlights ();
+	
+			for(int i = 0; i < activeMen.Count; i++) 
+			{					
+				piecePos = activeMen [i].transform.position;
+				n = i * 3;
+				_x = presentMove [n + 1];
+				_y = presentMove [n + 2];
+				ix = (int)char.GetNumericValue(_x);
+				iy = (int)char.GetNumericValue(_y);	
+				pieceIndex = getChessMenIndex(activeMen [i], presentMove [n]);	
+				Mesh currentMesh = activeMenMesh[i].GetComponent<MeshFilter>().mesh;						
+				Mesh newMesh = chessMen[pieceIndex].GetComponent<MeshFilter>().sharedMesh;
+				currentMesh = newMesh;
+				activeMen [i].transform.position = setNewPosition(piecePos, ix, iy);						
+			}
+		}
+	}
 
 	private string codeNotation(int x, int y)
 		{
@@ -911,43 +941,17 @@ public class BoardControl : MonoBehaviour
 	private void colorSelectedMoveBG()
 		{
 			if(selectedMove != -1)
-				{		
-					Image bgText;
-					foreach(Button move in moveTextButtons)
-						{
-							bgText = move.GetComponent<Image>();
-							bgText.color = textBG;
-						}
-					Image newImage = moveTextButtons[selectedMove].GetComponent<Image>();
-					newImage.color = textHighlight;
+			{		
+				Image bgText;
+				foreach(Button move in moveTextButtons)
+				{
+					bgText = move.GetComponent<Image>();
+					bgText.color = textBG;
 				}
+				Image newImage = moveTextButtons[selectedMove].GetComponent<Image>();
+				newImage.color = textHighlight;
+			}
    		}
-
-	private void displayMoveHistory ()
-		{
-			char[] presentMove = moveHistory [selectedMove].ToCharArray ();
-			char _x, _y;
-			Vector3 piecePos;
-			int ix, iy, n, pieceIndex;
-			
-			if (selectedMove != moveTextButtons.Count - 1)
-				boardHighlights.Instance.hideHighlights ();
-	
-			for (int i = 0; i < activeMen.Count; i++) 
-				{					
-					piecePos = activeMen [i].transform.position;
-					n = i * 3;
-					_x = presentMove [n + 1];
-					_y = presentMove [n + 2];
-					ix = (int)char.GetNumericValue(_x);
-					iy = (int)char.GetNumericValue(_y);	
-					pieceIndex = getChessMenIndex(activeMen [i], presentMove [n]);	
-					Mesh currentMesh = activeMenMesh[i].GetComponent<MeshFilter>().mesh;						
-					Mesh newMesh = chessMen[pieceIndex].GetComponent<MeshFilter>().sharedMesh;
-					currentMesh = newMesh;
-					activeMen [i].transform.position = setNewPosition(piecePos, ix, iy);						
-				}									
-		}
 
 	private int getChessMenIndex(GameObject go, char pieceCode)
 		{
@@ -1126,7 +1130,7 @@ public class BoardControl : MonoBehaviour
 							lerpedSquareColor = getColor;
 							haveSquareColor = true;
 						}							
-					lerpedSquareColor = Color.Lerp(getColor, Color.blue, Mathf.PingPong(Time.time, 1.2f));
+					lerpedSquareColor = Color.Lerp(getColor, Color.blue, Mathf.PingPong(Time.time, 1f));
 					colorUpdate(rend, lerpedSquareColor);
 					lastSquare = rend;
 				} 
@@ -1147,13 +1151,11 @@ public class BoardControl : MonoBehaviour
 		{
 			RaycastHit pieceCheck;
 			Renderer pieceRend;
-			if(!Camera.main)
-				return;
 			
 			if(Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out pieceCheck, 100.0f, LayerMask.GetMask("ChessPieces")))
 				{					
 					pieceRend = pieceCheck.collider.GetComponent<Renderer>();
-					//if the current mouse over is not the selected piece
+					
 					if(pieceCheck.collider.name != selectedPiece)
 						{
 							selectedPiece = pieceCheck.collider.name;
@@ -1175,8 +1177,13 @@ public class BoardControl : MonoBehaviour
 				}	
 		}
 
-	private void colorChanger()
+	private void colorChanger(string key)
 		{
+			if(colorToggle != key)
+				colorToggle = key;
+			else
+				colorToggle = " ";
+
 			if(colorToggle == "a")
 				selectedColor = allyFlash;
 			else if(colorToggle == "e")
@@ -1336,6 +1343,22 @@ public class BoardControl : MonoBehaviour
 					Debug.DrawLine(Vector3.forward * (selectedY + 1) + Vector3.right * selectedX, Vector3.forward * selectedY + Vector3.right * (selectedX +1), Color.red);
 				}
 		}
+
+	private void setColors()
+	{
+		lerpedSquareColor = Color.white;
+		lerpedPieceColor = Color.white;
+		getColor = Color.white;
+		pieceColor = Color.white;
+		lastColor = Color.white;		
+		selectedPieceFlash = new Color(.78f, .74f, .47f);
+		enemyFlash = new Color(.62f, .32f, .32f);
+		allyFlash = new Color(.14f, .41f, .61f);
+		blackHue = new Color(.10f, .10f, .10f);
+		textHighlight = new Color(1.14f, 1f, .5f);
+		textBG = new Color(197, 197, 197);	
+		colorChanger(" ");	
+	}
 		/*
 	private void setChessBoardColor()
 		{

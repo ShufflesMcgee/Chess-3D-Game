@@ -13,11 +13,11 @@ public class King : Chesspieces
 			// top side
 			i = CurrentX - 1;
 			j = CurrentY + 1;
-			if(CurrentY != 7)
+			if(CurrentY < 7)
 				{
 					for(int l = 0; l < 3; l++)
 						{
-							if(i >= 0 || i < 8)
+							if(i >= 0 && i < 8)
 								{
 									piece = BoardControl.Instance.chessPieces[i,j];
 									if(piece == null)
@@ -31,11 +31,11 @@ public class King : Chesspieces
 			//bottom side
 			i = CurrentX - 1;
 			j = CurrentY - 1;
-			if(CurrentY != 0)
+			if(CurrentY > 0)
 				{
 					for(int l = 0; l < 3; l++)
 						{
-							if(i >= 0 || i < 8)
+							if(i >= 0 && i < 8)
 								{
 									piece = BoardControl.Instance.chessPieces[i,j];
 									if(piece == null)
@@ -47,7 +47,7 @@ public class King : Chesspieces
 						}
 				}
 			//middle left
-			if(CurrentX != 0)
+			if(CurrentX > 0)
 				{
 					piece = BoardControl.Instance.chessPieces[CurrentX - 1, CurrentY];
 					if(piece == null)
@@ -56,7 +56,7 @@ public class King : Chesspieces
 						moves[CurrentX - 1, CurrentY] = true;
 				}
 			//middle right
-			if(CurrentX != 7)
+			if(CurrentX < 7)
 				{
 					piece = BoardControl.Instance.chessPieces[CurrentX + 1, CurrentY];
 					if(piece == null)

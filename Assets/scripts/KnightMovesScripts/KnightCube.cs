@@ -19,11 +19,15 @@ public class KnightCube : KnightMovesCube
 								break;
 							piece = KnightMovesBoardControl.Instance.allCubes [i, CurrentY];
 							if(piece != null)
-								if(piece.isWhite == isWhite)
-									{
-										moves[i, CurrentY] = true;
+								{
+									if(piece.isWhite == isWhite)
+										{
+											moves[i, CurrentY] = true;
+											break;
+										}
+									else
 										break;
-									}
+								}
 						}
 					i = CurrentX;
 					while(true)
@@ -32,12 +36,16 @@ public class KnightCube : KnightMovesCube
 							if(i < 0)
 								break;
 							piece = KnightMovesBoardControl.Instance.allCubes [i, CurrentY];
-							if(piece != null)							
-								if(piece.isWhite == isWhite)
-									{
-										moves[i, CurrentY] = true;
+							if(piece != null)						
+								{
+									if(piece.isWhite == isWhite)
+										{
+											moves[i, CurrentY] = true;
+											break;
+										}
+									else
 										break;
-									}
+								}
 		     			}
 					i = CurrentY;
 					while(true)
@@ -47,11 +55,15 @@ public class KnightCube : KnightMovesCube
 								break;		
 							piece = KnightMovesBoardControl.Instance.allCubes [CurrentX, i];
 							if(piece != null)
-								if(piece.isWhite == isWhite)
-									{
-										moves[CurrentX, i] = true;
+								{
+									if(piece.isWhite == isWhite)
+										{
+											moves[CurrentX, i] = true;
+											break;
+										}
+									else
 										break;
-									}
+								}
 
 						}
 					i = CurrentY;
@@ -62,11 +74,15 @@ public class KnightCube : KnightMovesCube
 								break;
 							piece = KnightMovesBoardControl.Instance.allCubes [CurrentX, i];
 							if(piece != null)
-								if(piece.isWhite == isWhite)
-									{
-										moves[CurrentX, i] = true;
+								{
+									if(piece.isWhite == isWhite)
+										{
+											moves[CurrentX, i] = true;
+											break;
+										}
+									else
 										break;
-									}
+								}
 						}
 					i = CurrentX;
 					j = CurrentY;
@@ -78,11 +94,15 @@ public class KnightCube : KnightMovesCube
 								break;
 							piece = KnightMovesBoardControl.Instance.allCubes [i, j];
 							if(piece != null)
-								if(piece.isWhite == isWhite)
-									{
-										moves[i, j] = true;
+								{
+									if(piece.isWhite == isWhite)
+										{
+											moves[i, j] = true;
+											break;
+										}
+									else
 										break;
-									}
+								}
 						}
 					i = CurrentX;
 					j = CurrentY;
@@ -94,11 +114,15 @@ public class KnightCube : KnightMovesCube
 								break;
 							piece = KnightMovesBoardControl.Instance.allCubes [i, j];
 							if(piece != null)
-								if(piece.isWhite == isWhite)
-									{
-										moves[i, j] = true;
+								{
+									if(piece.isWhite == isWhite)
+										{
+											moves[i, j] = true;
+											break;
+										}
+									else
 										break;
-									}
+								}
 						}
 					i = CurrentX;
 					j = CurrentY;
@@ -110,11 +134,15 @@ public class KnightCube : KnightMovesCube
 								break;
 							piece = KnightMovesBoardControl.Instance.allCubes [i, j];
 							if(piece != null)
-								if(piece.isWhite == isWhite)
-									{
-										moves[i, j] = true;
+								{
+									if(piece.isWhite == isWhite)
+										{
+											moves[i, j] = true;
+											break;
+										}
+									else
 										break;
-									}
+								}
 						}
 					i = CurrentX;
 					j = CurrentY;
@@ -126,11 +154,15 @@ public class KnightCube : KnightMovesCube
 								break;
 							piece = KnightMovesBoardControl.Instance.allCubes [i, j];
 							if(piece != null)
-								if(piece.isWhite == isWhite)
-									{
-										moves[i, j] = true;
+								{
+									if(piece.isWhite == isWhite)
+										{
+											moves[i, j] = true;
+											break;
+										}
+									else
 										break;
-									}
+								}
 				}
 
 				}
